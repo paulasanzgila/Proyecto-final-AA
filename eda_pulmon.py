@@ -4,7 +4,7 @@ import seaborn as sns
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
 
-# Cargar el dataset en mi archivo local
+# Cargar el dataset en tu archivo local
 df = pd.read_csv(r"C:\3 de carrera\aprendizaje automatico\proyecto final\survey lung cancer.csv")
 
 # 1. Limpieza de datos
@@ -21,61 +21,69 @@ print("Columnas con valores nulos:\n\n", nulos[nulos>0])
 
 # 2. Creación de Diagramas
 
+sns.set_theme(style="whitegrid")
+
 # 1. Distribución de tumores con un Bar Chart
-fig0, ax0 = plt.subplots(figsize=(5, 5))
+fig0, ax0 = plt.subplots(figsize=(6, 4))
 sns.countplot(data=df, x='LUNG_CANCER', palette=['#66b3ff', '#ff9999'], ax=ax0)
 ax0.set_title('Casos de Cáncer (NO vs YES)')
-
-# 2. Figura de Histogramas y Scatter Plots
-fig1, axes1 = plt.subplots(2, 2, figsize=(10, 10))
-fig1.suptitle("Distribuciones y Relaciones según el Diagnóstico")
-
-# Histograma de Edad
-sns.histplot(data=df, x='AGE', hue='LUNG_CANCER', kde=True, ax=axes1[0, 0], palette=['#66b3ff', '#ff9999'])
-axes1[0, 0].set_title('Distribución de la Edad')
-
-# Gráfico de Fumadores
-sns.countplot(data=df, x='SMOKING', hue='LUNG_CANCER', ax=axes1[0, 1], palette=['#66b3ff', '#ff9999'])
-axes1[0, 1].set_title('Fumadores vs Diagnóstico')
-
-# Scatter Plot Edad vs Ansiedad
-sns.scatterplot(data=df, x='AGE', y='ANXIETY', hue='LUNG_CANCER', ax=axes1[1, 0], palette=['#66b3ff', '#ff9999'])
-axes1[1, 0].set_title('Relación Edad vs Ansiedad')
-
-# Scatter Plot Edad vs Fatiga
-sns.scatterplot(data=df, x='AGE', y='FATIGUE', hue='LUNG_CANCER', ax=axes1[1, 1], palette=['#66b3ff', '#ff9999'])
-axes1[1, 1].set_title('Relación Edad vs Fatiga')
-
-
-# 3. Figura de Boxplots
-fig2, axes2 = plt.subplots(2, 2, figsize=(10, 10))
-fig2.suptitle("Síntomas según el Diagnóstico")
-
-# Edad
-sns.boxplot(data=df, x='LUNG_CANCER', y='AGE', ax=axes2[0, 0], palette=['#66b3ff', '#ff9999'])
-axes2[0, 0].set_title("Edad según Diagnóstico")
-
-# Tos
-sns.boxplot(data=df, x='LUNG_CANCER', y='COUGHING', ax=axes2[0, 1], palette=['#66b3ff', '#ff9999'])
-axes2[0, 1].set_title("Tos según Diagnóstico")
-
-# Dificultad para respirar
-sns.boxplot(data=df, x='LUNG_CANCER', y='SHORTNESS OF BREATH', ax=axes2[1, 0], palette=['#66b3ff', '#ff9999'])
-axes2[1, 0].set_title("Dificultad para Respirar")
-
-# Dolor en el pecho
-sns.boxplot(data=df, x='LUNG_CANCER', y='CHEST PAIN', ax=axes2[1, 1], palette=['#66b3ff', '#ff9999'])
-axes2[1, 1].set_title("Dolor en el Pecho")
-
+plt.tight_layout()
 plt.show()
 
-# Como hemos observado, hay variables con 1 y 2 (YES/NO). Para evitar una fuga de datos, la estandarización se hará en el archivo MLP donde se encontrará todo el código que entrenará la red neuronal.
+# 2. Histograma de Edad (Variable numérica principal)
+fig1, ax1 = plt.subplots(figsize=(8, 5))
+sns.histplot(data=df, x='AGE', hue='LUNG_CANCER', kde=True, ax=ax1, palette=['#66b3ff', '#ff9999'])
+ax1.set_title('Distribución de la Edad según el Diagnóstico')
+plt.tight_layout()
+plt.show()
 
-# 3. Variable de Salida a Binario y transformación de datos
+# 3. Boxplots de TODOS los síntomas
+# Seleccionamos todas las variables que son síntomas (excluyendo Edad, Género y el target)
+columnas_sintomas = [col for col in df.columns if col not in ['GENDER', 'AGE', 'LUNG_CANCER']]
+
+# Creamos una cuadrícula de 4x4 para los 13 síntomas (sobran 3 huecos)
+fig2, axes2 = plt.subplots(4, 4, figsize=(16, 14))
+fig2.subplots_adjust(hspace=0.6, wspace=0.4) # Espacio para que no se solapen los títulos
+fig2.suptitle("Comparativa de TODOS los Síntomas según el Diagnóstico", fontsize=18, y=1.02)
+
+axes2 = axes2.flatten()
+
+for i, col in enumerate(columnas_sintomas):
+    sns.boxplot(data=df, x='LUNG_CANCER', y=col, ax=axes2[i], palette=['#66b3ff', '#ff9999'])
+    # Formatear el título (quitar guiones bajos y poner mayúscula)
+    axes2[i].set_title(col.replace('_', ' ').title(), fontsize=11)
+    axes2[i].set_xlabel('') 
+    axes2[i].set_ylabel('')
+
+# Ocultar los huecos sobrantes de la cuadrícula (del 14 al 16)
+for j in range(len(columnas_sintomas), 16):
+    fig2.delaxes(axes2[j])
+
+plt.tight_layout()
+plt.show()
+
+# 4. Heatmap de Correlación (Opcional pero muy recomendado)
+# Para ver qué variables tienen más relación con el cáncer
+fig3, ax3 = plt.subplots(figsize=(12, 10))
+df_corr = df.copy()
+# Mapeamos temporalmente para que el heatmap funcione
+df_corr['GENDER'] = df_corr['GENDER'].map({'M': 1, 'F': 0})
+df_corr['LUNG_CANCER'] = df_corr['LUNG_CANCER'].map({'YES': 1, 'NO': 0})
+for col in columnas_sintomas:
+    if df_corr[col].max() == 2:
+        df_corr[col] = df_corr[col].map({2: 1, 1: 0})
+
+corr_matrix = df_corr.corr()
+sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', ax=ax3, vmin=-1, vmax=1)
+ax3.set_title('Matriz de Correlación de Variables Clínicas')
+plt.tight_layout()
+plt.show()
+
+# 3. Variable de Salida a Binario y transformación
+
 df['GENDER'] = df['GENDER'].map({'M': 1, 'F': 0})
 df['LUNG_CANCER'] = df['LUNG_CANCER'].map({'YES': 1, 'NO': 0})
 
-# Transformamos las columnas que tienen 1 y 2 a 0 y 1
 for col in df.columns:
     if col not in ['GENDER', 'AGE', 'LUNG_CANCER']:
         if df[col].max() == 2:
@@ -87,7 +95,7 @@ frecuencias = df['LUNG_CANCER'].value_counts(normalize=True) * 100
 print(f"Proporción de 0 (No Cáncer): {frecuencias[0]:.2f}%")
 print(f"Proporción de 1 (Cáncer): {frecuencias[1]:.2f}%")
 
-# Calcular pesos para balancear (para que el 1 no sea peor que el 0)
+# Calcular pesos para balancear
 pesos = compute_class_weight(class_weight='balanced', classes=np.unique(df['LUNG_CANCER']), y=df['LUNG_CANCER'])
 diccionario_pesos = {0: pesos[0], 1: pesos[1]}
 print(f"\nPesos calculados para balancear: {diccionario_pesos}")
