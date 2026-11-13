@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
 
 # Cargar el dataset en tu archivo local
-df = pd.read_csv(r"C:\3 de carrera\aprendizaje automatico\proyecto final\survey lung cancer.csv")
+df = pd.read_csv("survey lung cancer.csv")ç
 
 # 1. Limpieza de datos
 print(df.columns)
